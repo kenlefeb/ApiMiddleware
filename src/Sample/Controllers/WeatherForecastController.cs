@@ -25,13 +25,13 @@ namespace Sample.Controllers
         {
             _logger = logger;
             _telemetry = telemetry;
-            _logger.LogInformation($"Constructing the {nameof(WeatherForecastController)}");
+            _logger.LogInformation("Constructing the {0}", nameof(WeatherForecastController));
         }
 
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
-            using var operation = _telemetry.StartOperation<RequestTelemetry>("GET WeatherForecasts");
+            _logger.LogWarning("Retrieving weather forecasts");
             var rng = new Random();
             var forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

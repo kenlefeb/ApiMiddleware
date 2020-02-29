@@ -43,6 +43,9 @@ namespace Sample
 
             app.UseAuthorization();
 
+            app.UseApplicationInsightsRequestTelemetry();
+            app.UseApplicationInsightsExceptionTelemetry();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
