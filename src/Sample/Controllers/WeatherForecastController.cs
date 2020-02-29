@@ -31,12 +31,22 @@ namespace Sample.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
-            _logger.LogWarning("Retrieving weather forecasts");
+            return Post(new ForecastRequest
+            {
+                Days = 5,
+                Minimum = -20,
+                Maximum = 55,
+            });
+        }
+
+        [HttpPost]
+        public IEnumerable<WeatherForecast> Post(ForecastRequest request)
+        {
             var rng = new Random();
-            var forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            var forecasts = Enumerable.Range(1, request.Days).Select(index => new WeatherForecast
             {
                 Date = DateTime.Now.AddDays(index),
-                TemperatureC = rng.Next(-20, 55),
+                TemperatureC = rng.Next(request.Minimum, request.Maximum),
                 Summary = Summaries[rng.Next(Summaries.Length)]
             })
                 .ToArray();
@@ -56,6 +66,14 @@ namespace Sample.Controllers
                     });
             }
             return forecasts;
+
         }
+    }
+
+    public class ForecastRequest
+    {
+        public int Days { get; set; }
+        public int Maximum { get; set; }
+        public int Minimum { get; set; }
     }
 }

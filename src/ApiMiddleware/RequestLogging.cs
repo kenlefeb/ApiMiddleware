@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Kenlefeb.Api.Middleware.Models;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Primitives;
+using Microsoft.AspNetCore.Http.Internal;
 
 namespace Kenlefeb.Api.Middleware
 {
@@ -17,6 +19,7 @@ namespace Kenlefeb.Api.Middleware
         private readonly TelemetryClient _telemetry;
         readonly RequestDelegate _next;
         private string _response;
+        private string _request;
 
         public RequestLogging(RequestDelegate next, TelemetryClient telemetry)
         {
@@ -29,28 +32,34 @@ namespace Kenlefeb.Api.Middleware
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
 
+            var originals = new
+                            {
+                                Response = httpContext.Response.Body,
+                            };
 
-            var original = httpContext.Response.Body;
+            _request = SaveRequestBody(httpContext.Request).Result;
+
             using (var response = new MemoryStream())
             {
                 httpContext.Response.Body = response;
                 httpContext.Response.OnCompleted(PublishRequestResponse, httpContext);
                 await _next(httpContext).ConfigureAwait(true);
-                _response = await SaveResponseBody(httpContext).ConfigureAwait(true);
-                await response.CopyToAsync(original).ConfigureAwait(true);
+                _response = await SaveResponseBody(httpContext.Response.Body).ConfigureAwait(true);
+                await response.CopyToAsync(originals.Response).ConfigureAwait(true);
             }
         }
 
-        private static async Task<string> SaveResponseBody(HttpContext httpContext)
+        private static async Task<string> SaveRequestBody(HttpRequest request)
         {
+            request.EnableBuffering();
             var body = default(string);
             try
             {
-                httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
 #pragma warning disable CA2000 // Dispose objects before losing scope
-                body = await new StreamReader(httpContext.Response.Body).ReadToEndAsync().ConfigureAwait(true);
+                var reader = new StreamReader(request.Body);
 #pragma warning restore CA2000 // Dispose objects before losing scope
-                httpContext.Response.Body.Seek(0, SeekOrigin.Begin);
+                body = await reader.ReadToEndAsync().ConfigureAwait(true);
+                request.Body.Seek(0, SeekOrigin.Begin);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch
@@ -61,7 +70,27 @@ namespace Kenlefeb.Api.Middleware
             return body;
         }
 
-        private async Task PublishRequestResponse(object parameter)
+        private static async Task<string> SaveResponseBody(Stream stream)
+        {
+            var body = default(string);
+            try
+            {
+                stream.Seek(0, SeekOrigin.Begin);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+                body = await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(true);
+#pragma warning restore CA2000 // Dispose objects before losing scope
+                stream.Seek(0, SeekOrigin.Begin);
+            }
+#pragma warning disable CA1031 // Do not catch general exception types
+            catch
+            {
+                // Ignore any errors reading the request body
+            }
+#pragma warning restore CA1031 // Do not catch general exception types
+            return body;
+        }
+
+        private Task PublishRequestResponse(object parameter)
         {
             var httpContext = parameter as HttpContext;
             if (httpContext == null)
@@ -69,16 +98,17 @@ namespace Kenlefeb.Api.Middleware
 
             var properties = new Dictionary<string, string>
                              {
-                                 { "Request", await CollectRequest(httpContext).ConfigureAwait(true) },
+                                 { "Request", CollectRequest(httpContext) },
                                  { "Response", CollectResponse(httpContext) },
                              };
             var metrics = CollectMetrics(); //(httpContext);
             this._telemetry.TrackEvent("HTTP Request", properties, metrics);
+            return Task.CompletedTask;
         }
 
         private static IDictionary<string, double> CollectMetrics() //(HttpContext httpContext)
         {
-            return new Dictionary<string, double>{ };
+            return new Dictionary<string, double> { };
         }
 
         private string CollectResponse(HttpContext httpContext)
@@ -89,21 +119,10 @@ namespace Kenlefeb.Api.Middleware
             return System.Text.Json.JsonSerializer.Serialize(response);
         }
 
-        private static async Task<string> CollectRequest(HttpContext httpContext)
+        private string CollectRequest(HttpContext httpContext)
         {
             var request = new Request(httpContext);
-
-            try
-            {
-                using (var reader = new StreamReader(httpContext.Request.Body))
-                    request.Content.Body = await reader.ReadToEndAsync().ConfigureAwait(true);
-            }
-#pragma warning disable CA1031 // Do not catch general exception types
-            catch
-            {
-                // Ignore any errors reading the request body
-            }
-#pragma warning restore CA1031 // Do not catch general exception types
+            request.Content.Body = _request;
 
             return System.Text.Json.JsonSerializer.Serialize(request);
         }
