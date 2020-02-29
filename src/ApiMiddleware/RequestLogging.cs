@@ -1,23 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Kenlefeb.Api.Middleware.Models;
+﻿using Kenlefeb.Api.Middleware.Models;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.Extensions.Primitives;
-using Microsoft.AspNetCore.Http.Internal;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Kenlefeb.Api.Middleware
 {
+    [Fody.ConfigureAwait(false)]
     public class RequestLogging
     {
         private readonly TelemetryClient _telemetry;
-        readonly RequestDelegate _next;
+        private readonly RequestDelegate _next;
         private string _response;
         private string _request;
 
@@ -33,20 +28,19 @@ namespace Kenlefeb.Api.Middleware
                 throw new ArgumentNullException(nameof(httpContext));
 
             var originals = new
-                            {
-                                Response = httpContext.Response.Body,
-                            };
+            {
+                Response = httpContext.Response.Body,
+            };
 
             _request = SaveRequestBody(httpContext.Request).Result;
 
-            using (var response = new MemoryStream())
-            {
-                httpContext.Response.Body = response;
-                httpContext.Response.OnCompleted(PublishRequestResponse, httpContext);
-                await _next(httpContext).ConfigureAwait(true);
-                _response = await SaveResponseBody(httpContext.Response.Body).ConfigureAwait(true);
-                await response.CopyToAsync(originals.Response).ConfigureAwait(true);
-            }
+            httpContext.Response.Body = new MemoryStream();
+            httpContext.Response.OnCompleted(PublishRequestResponse, httpContext);
+
+            await _next(httpContext);
+
+            _response = await SaveResponseBody(httpContext.Response.Body);
+            await httpContext.Response.Body.CopyToAsync(originals.Response);
         }
 
         private static async Task<string> SaveRequestBody(HttpRequest request)
@@ -58,7 +52,7 @@ namespace Kenlefeb.Api.Middleware
 #pragma warning disable CA2000 // Dispose objects before losing scope
                 var reader = new StreamReader(request.Body);
 #pragma warning restore CA2000 // Dispose objects before losing scope
-                body = await reader.ReadToEndAsync().ConfigureAwait(true);
+                body = await reader.ReadToEndAsync();
                 request.Body.Seek(0, SeekOrigin.Begin);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -77,7 +71,7 @@ namespace Kenlefeb.Api.Middleware
             {
                 stream.Seek(0, SeekOrigin.Begin);
 #pragma warning disable CA2000 // Dispose objects before losing scope
-                body = await new StreamReader(stream).ReadToEndAsync().ConfigureAwait(true);
+                body = await new StreamReader(stream).ReadToEndAsync();
 #pragma warning restore CA2000 // Dispose objects before losing scope
                 stream.Seek(0, SeekOrigin.Begin);
             }
@@ -126,6 +120,5 @@ namespace Kenlefeb.Api.Middleware
 
             return System.Text.Json.JsonSerializer.Serialize(request);
         }
-
     }
 }

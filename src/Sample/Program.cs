@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.ApplicationInsights;
+using System;
 
 namespace Sample
 {
@@ -22,7 +19,7 @@ namespace Sample
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                    webBuilder.ConfigureLogging((context,options) =>
+                    webBuilder.ConfigureLogging((context, options) =>
                     {
                         var instrumentationKey = context.Configuration.GetValue<string>("ApplicationInsights:InstrumentationKey");
                         if (!string.IsNullOrEmpty(instrumentationKey))

@@ -1,10 +1,7 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 
 namespace Kenlefeb.Api.Middleware.Models
 {
@@ -17,17 +14,17 @@ namespace Kenlefeb.Api.Middleware.Models
 
             Headers = httpContext.Request.Headers.ToDictionary(h => h.Key, h => $"{h.Value}");
             Method = httpContext.Request.Method;
-                Host = $"{httpContext.Request.Host}";
-                Protocol = httpContext.Request.Protocol;
-                Query = httpContext.Request.Query.ToDictionary(q => q.Key, q => $"{q.Value}");
-                Content = new Content
-                          {
-                              Type   = httpContext.Request.ContentType,
-                              Length = httpContext.Request.ContentLength,
-                          };
+            Host = $"{httpContext.Request.Host}";
+            Protocol = httpContext.Request.Protocol;
+            Query = httpContext.Request.Query.ToDictionary(q => q.Key, q => $"{q.Value}");
+            Content = new Content
+            {
+                Type = httpContext.Request.ContentType,
+                Length = httpContext.Request.ContentLength,
+            };
         }
 
-        public Dictionary<string,string> Headers { get; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>();
         public string Method { get; set; }
         public string Host { get; set; }
         public string Protocol { get; set; }
@@ -37,19 +34,22 @@ namespace Kenlefeb.Api.Middleware.Models
 
     public class Response
     {
-        public Response() { }
+        public Response()
+        {
+        }
+
         public Response(HttpContext httpContext)
         {
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
 
             StatusCode = httpContext.Response.StatusCode;
-            Headers    = httpContext.Response.Headers.ToDictionary(h => h.Key, h => $"{h.Value}");
+            Headers = httpContext.Response.Headers.ToDictionary(h => h.Key, h => $"{h.Value}");
             Content = new Content
-                      {
-                          Type   = httpContext.Response.ContentType,
-                          Length = httpContext.Response.ContentLength
-                      };
+            {
+                Type = httpContext.Response.ContentType,
+                Length = httpContext.Response.ContentLength
+            };
         }
 
         public int StatusCode { get; set; }
@@ -57,7 +57,8 @@ namespace Kenlefeb.Api.Middleware.Models
         public Content Content { get; set; }
     }
 
-    public class Content {
+    public class Content
+    {
         public string Type { get; set; }
         public long? Length { get; set; }
         public string Body { get; set; }
