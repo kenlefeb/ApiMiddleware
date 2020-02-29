@@ -1,24 +1,24 @@
-﻿using Kenlefeb.Api.Middleware.Models;
-using Microsoft.ApplicationInsights;
-using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Kenlefeb.Api.Middleware.Models;
+using Microsoft.ApplicationInsights;
+using Microsoft.AspNetCore.Http;
 
 namespace Kenlefeb.Api.Middleware
 {
     [Fody.ConfigureAwait(false)]
     public class RequestLogging
     {
-        private readonly TelemetryClient _telemetry;
         private readonly RequestDelegate _next;
-        private string _response;
-        private string _request;
+        private readonly TelemetryClient _telemetry;
+        private          string          _request;
+        private          string          _response;
 
         public RequestLogging(RequestDelegate next, TelemetryClient telemetry)
         {
-            _next = next ?? throw new ArgumentNullException(nameof(next));
+            _next      = next ?? throw new ArgumentNullException(nameof(next));
             _telemetry = telemetry;
         }
 
@@ -27,12 +27,10 @@ namespace Kenlefeb.Api.Middleware
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
 
-            var originals = new
-            {
-                Response = httpContext.Response.Body,
-            };
+            var originals = new {Response = httpContext.Response.Body};
 
-            _request = SaveRequestBody(httpContext.Request).Result;
+            _request = SaveRequestBody(httpContext.Request)
+                .Result;
 
             httpContext.Response.Body = new MemoryStream();
             httpContext.Response.OnCompleted(PublishRequestResponse, httpContext);
@@ -92,17 +90,17 @@ namespace Kenlefeb.Api.Middleware
 
             var properties = new Dictionary<string, string>
                              {
-                                 { "Request", CollectRequest(httpContext) },
-                                 { "Response", CollectResponse(httpContext) },
+                                 {"Request", CollectRequest(httpContext)},
+                                 {"Response", CollectResponse(httpContext)}
                              };
             var metrics = CollectMetrics(); //(httpContext);
-            this._telemetry.TrackEvent("HTTP Request", properties, metrics);
+            _telemetry.TrackEvent("HTTP Request", properties, metrics);
             return Task.CompletedTask;
         }
 
         private static IDictionary<string, double> CollectMetrics() //(HttpContext httpContext)
         {
-            return new Dictionary<string, double> { };
+            return new Dictionary<string, double>();
         }
 
         private string CollectResponse(HttpContext httpContext)
