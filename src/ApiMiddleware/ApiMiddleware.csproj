@@ -18,6 +18,7 @@
         <PackageIconUrl />
         <RepositoryUrl>https://github.com/kenlefeb/ApiMiddleware</RepositoryUrl>
         <NeutralLanguage>en-US</NeutralLanguage>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

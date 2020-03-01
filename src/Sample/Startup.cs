@@ -39,7 +39,11 @@ namespace Sample
 
             app.UseApplicationInsightsRequestTelemetry();
             app.UseApplicationInsightsExceptionTelemetry();
-            app.UseMiddleware<RequestLogging>();
+            app.UseRequestLogging(options =>
+            {
+                options.Capture.Request.Content = true;
+                options.Capture.Response.Content = true;
+            });
 
             app.UseEndpoints(endpoints =>
             {

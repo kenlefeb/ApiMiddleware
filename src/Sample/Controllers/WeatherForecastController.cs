@@ -66,11 +66,4 @@ namespace Sample.Controllers
             return forecasts;
         }
     }
-
-    public class ForecastRequest
-    {
-        public int Days { get; set; }
-        public int Maximum { get; set; }
-        public int Minimum { get; set; }
-    }
 }
