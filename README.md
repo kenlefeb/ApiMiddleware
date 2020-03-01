@@ -1,4 +1,5 @@
 # ApiMiddleware
+
 Helpful middleware for your ASP.NET Core APIs
 
 ## What is This?
@@ -7,7 +8,14 @@ I find myself rebuilding a lot of the same boilerplate code in my APIs, so I've 
 
 ## Quick Start
 
-In your Startup class, add the `UseRequestLogging` extension method (from the `Kenlefeb.Api.Middleware` namespace) to register the middleware.
+First, add a reference to the [Nuget package](https://www.nuget.org/packages/Kenlefeb.Api.Middleware/):
+
+```
+Install-Package Kenlefeb.Api.Middleware -Version 1.0.0
+```
+
+
+Then, in your Startup class, add the `UseRequestLogging` extension method (from the `Kenlefeb.Api.Middleware` namespace) to register the middleware.
 
 ```csharp
   public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
