@@ -37,10 +37,9 @@ namespace Sample
 
             app.UseAuthorization();
 
-            app.UseApplicationInsightsRequestTelemetry();
-            app.UseApplicationInsightsExceptionTelemetry();
             app.UseRequestLogging(options =>
             {
+                options.EventName = "HTTP Request/Response";
                 options.Capture.Request.Content = true;
                 options.Capture.Response.Content = true;
             });
