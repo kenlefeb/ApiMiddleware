@@ -14,7 +14,7 @@ namespace Kenlefeb.Api.Middleware
         /// Gets or sets the name to use for logging an HTTP request in Application Insights.
         /// </summary>
         /// <value>The name of the event.</value>
-        public string? EventName { get; set; }
+        public string EventName { get; set; }
 
         /// <summary>
         /// Gets or sets the capture.
